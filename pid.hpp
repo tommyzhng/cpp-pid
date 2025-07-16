@@ -8,33 +8,37 @@ class PID
 public:
     /**
      * @brief PID controller constructor
-     * @param dt Time step for the controller
+     * @param Ts Time step for the controller
      * @param max Maximum output value
      * @param min Minimum output value
-     * @param Kp Proportional gain
-     * @param Ki Integral gain
-     * @param Kd Derivative gain
-     * @param integ_clamp Integral clamp value
+     * @param kp Proportional gain
+     * @param ki Integral gain
+     * @param kd Derivative gain
+     * @param integ_clamp Integral clamp value relative to effector output (e.g. 500 for 500us on a servo)
      * @param alpha_d Smoothing factor for the derivative term (larger alpha_d means less smoothing)
      * @param tau Time constant for low-pass filter on output (larger tau is more smoothing)
      */
-    PID(float dt, float max, float min, float Kp, float Ki, float Kd, float integ_clamp, float alpha_d, float tau)
-        : dt_(dt), max_(max), min_(min), Kp_(Kp), Ki_(Ki), Kd_(Kd), integ_clamp_(integ_clamp), derivative_(0.0), alpha_d_(alpha_d), alpha_lpf(dt / (dt + tau)), 
-            integral_(0.0), prev_error_(0.0), old_error_filtered_(0.0), old_output_filtered_(0.0) {}
+    PID(float Ts, float max, float min, float kp, float ki, float kd, float integ_clamp, float alpha_d, float tau)
+        : Ts_(Ts), max_(max), min_(min), integ_clamp_(integ_clamp), derivative_(0.0), alpha_d_(alpha_d), alpha_lpf(Ts / (Ts + tau))
+    {
+        setKp(kp);
+        setKi(ki);
+        setKd(kd);
+    }
 
     float run(float setpoint, float currentValue) {
         error_ = setpoint - currentValue;
 
-        if (dt_ > 0.0f) derivative_ = alpha_d_ * ((error_ - prev_error_) / dt_) + (1 - alpha_d_) * derivative_;
-        output_ =  Kp_ * error_ + Ki_ * integral_ + Kd_ * derivative_;
+        if (Ts_ > 0.0f) derivative_ = alpha_d_ * (error_ - prev_error_) + (1 - alpha_d_) * derivative_;
+        output_ =  kp_ * error_ + ki_Ts * integral_ + kd_Ts * derivative_;
 
         if (output_ > max_) output_ = max_; 
         else if (output_ < min_) output_ = min_;
-        else integral_ += error_ * dt_;
+        else integral_ += error_;
         
         // integral clamp
-        if (integral_ * Ki_ > integ_clamp_) integral_ = integ_clamp_ / Ki_;
-        else if (integral_ * Ki_ < -integ_clamp_) integral_ = -integ_clamp_ / Ki_;
+        if (integral_ * ki_Ts > integ_clamp_) integral_ = integ_clamp_ / ki_Ts;
+        else if (integral_ * ki_Ts < -integ_clamp_) integral_ = -integ_clamp_ / ki_Ts;
 
         output_ = alpha_lpf * output_ + (1 - alpha_lpf) * old_output_filtered_; // increasing tau makes output slower
 
@@ -52,13 +56,16 @@ public:
     float integral_;
 
 private:
-    double dt_;
+    double Ts_;
     float max_, min_;
-    float Kp_, Ki_, Kd_, integ_clamp_;
+    float kp_, ki_Ts, kd_Ts, integ_clamp_;
     float error_, derivative_, alpha_d_, alpha_lpf;
-    float prev_error_, old_error_filtered_, old_output_filtered_;
-    float ef_, output_;
+    float prev_error_, old_error_filtered_, old_output_filtered_ = 0.0;
+    float output_;
 
+    void setKp(float kp) { this->kp_ = kp; }
+    void setKi(float ki) { this->ki_Ts = ki * Ts_; }  // premultiply by Ts for efficiency
+    void setKd(float kd) { this->kd_Ts = kd / Ts_; }  // predivide by Ts for efficiency
 };
 
 #endif
