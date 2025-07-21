@@ -62,7 +62,7 @@ public:
     float run(float setpoint, float measurement) {
         error_ = setpoint - measurement;
 
-        if (Ts_ > 0.0f) derivative_ = alpha_d_ * (error_ - prev_meas_) + (1 - alpha_d_) * derivative_;
+        if (Ts_ > 0.0f) derivative_ = alpha_d_ * (error_ - prev_err_) + (1 - alpha_d_) * derivative_;
         output_ =  kp_ * error_ + ki_Ts_ * integral_ + kd_Ts_ * derivative_;
 
         if (output_ > max_) output_ = max_; 
@@ -76,7 +76,7 @@ public:
         output_ = alpha_lpf * output_ + (1 - alpha_lpf) * old_output_filtered_; // increasing tau makes output slower
 
         // Update old values for next iteration
-        prev_meas_ = error_;
+        prev_err_ = error_;
         old_output_filtered_ = output_;
 
         return output_;
@@ -84,7 +84,7 @@ public:
 
     void reset() {
         integral_ = 0.0;
-        prev_meas_ = 0.0;
+        prev_err_ = 0.0;
     }
     float integral_;
 
@@ -93,7 +93,7 @@ private:
     float max_, min_ = 0.0f;
     float kp_, ki_Ts_, kd_Ts_, integ_clamp_ = 0.0f;
     float error_, derivative_, alpha_d_, alpha_lpf = 0.0f;
-    float prev_meas_, old_error_filtered_, old_output_filtered_ = 0.0;
+    float prev_err_, old_error_filtered_, old_output_filtered_ = 0.0;
     float output_;
 
     void setKp(float kp) { this->kp_ = kp; }
