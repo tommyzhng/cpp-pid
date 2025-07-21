@@ -76,7 +76,7 @@ public:
         output_ = alpha_lpf * output_ + (1 - alpha_lpf) * old_output_filtered_; // increasing tau makes output slower
 
         // Update old values for next iteration
-        prev_meas_ = error_;
+        prev_meas_ = measurement;  // Should store measurement, not error!
         old_output_filtered_ = output_;
 
         return output_;
