@@ -19,8 +19,11 @@ public:
      * @param tau Time constant for low-pass filter on output (larger tau is more smoothing)
      */
     PID(float Ts, float max, float min, float kp, float ki, float kd, float integ_clamp, float alpha_d, float tau)
-        : Ts_(Ts), max_(max), min_(min), derivative_(0.0), alpha_d_(alpha_d), alpha_lpf(Ts / (Ts + tau))
+        : Ts_(Ts), max_(max), min_(min), derivative_(0.0), alpha_d_(alpha_d), 
+          alpha_lpf((Ts + tau) > 1e-6f ? Ts / (Ts + tau) : 0.0f)
     {
+        if (Ts_ == 0.0f) Ts_ = 1e-6f; // prevent division by zero
+
         setKp(kp);
         setKi(ki);
         setKd(kd);
@@ -57,17 +60,17 @@ public:
     float integral_;
 
 private:
-    double Ts_;
-    float max_, min_;
-    float kp_, ki_Ts_, kd_Ts_, integ_clamp_;
-    float error_, derivative_, alpha_d_, alpha_lpf;
+    double Ts_ = 0.1;
+    float max_, min_ = 0.0f;
+    float kp_, ki_Ts_, kd_Ts_, integ_clamp_ = 0.0f;
+    float error_, derivative_, alpha_d_, alpha_lpf = 0.0f;
     float prev_error_, old_error_filtered_, old_output_filtered_ = 0.0;
     float output_;
 
     void setKp(float kp) { this->kp_ = kp; }
     void setKi(float ki) { this->ki_Ts_ = ki * Ts_; }  // premultiply by Ts for efficiency
     void setKd(float kd) { this->kd_Ts_ = kd / Ts_; }  // predivide by Ts for efficiency
-    void setIntegClamp(float integ_clamp) { this->integ_clamp_ = integ_clamp / ki_Ts_; }
+    void setIntegClamp(float integ_clamp) { this->integ_clamp_ = (ki_Ts_ > 0) ? integ_clamp / ki_Ts_ : 0.0f; }
 };
 
 #endif
