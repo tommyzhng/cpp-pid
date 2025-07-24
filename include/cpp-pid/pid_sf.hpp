@@ -47,13 +47,14 @@ public:
      * @param alpha_d Smoothing factor for the derivative term (larger alpha_d means less smoothing)
      * @param tau Time constant for low-pass filter on output (larger tau is more smoothing)
      */
-    PID_SF(float Ts, float max, float min, float K, float Ki, float Kd, float integ_clamp, float alpha_d, float tau)
-        : Ts_(Ts), max_(max), min_(min), derivative_(0.0), alpha_d_(alpha_d), 
+    PID_SF(float Ts, float max, float min, float K, float Kp, float Ki, float Kd, float integ_clamp, float alpha_d, float tau)
+        : Ts_(Ts), max_(max), min_(min), derivative_(0.0), alpha_d_(alpha_d),
           alpha_lpf((Ts + tau) > 1e-6f ? Ts / (Ts + tau) : 0.0f)
     {
         if (Ts_ == 0.0f) Ts_ = 1e-6f; // prevent division by zero
 
         setK(K);
+        setKp(Kp);
         setKi(Ki);
         setKd(Kd);
         setIntegClamp(integ_clamp);
@@ -63,7 +64,7 @@ public:
         error_ = setpoint - measurement;
 
         if (Ts_ > 0.0f) derivative_ = alpha_d_ * (measurement - prev_meas_) + (1 - alpha_d_) * derivative_;
-        output_ =  k_ * (error_ + ki_Ts_ * integral_ - kd_Ts_ * derivative_);
+        output_ =  k_ * (kp_ * error_ + ki_Ts_ * integral_ - kd_Ts_ * derivative_);
 
         if (output_ > max_) output_ = max_; 
         else if (output_ < min_) output_ = min_;
@@ -91,12 +92,13 @@ public:
 private:
     double Ts_ = 0.1;
     float max_, min_ = 0.0f;
-    float k_, ki_Ts_, kd_Ts_, integ_clamp_ = 0.0f;
+    float k_, kp_, ki_Ts_, kd_Ts_, integ_clamp_ = 0.0f;
     float error_, derivative_, alpha_d_, alpha_lpf = 0.0f;
     float prev_meas_, old_error_filtered_, old_output_filtered_ = 0.0;
     float output_;
 
     void setK(float K) { this->k_ = K; }
+    void setKp(float Kp) { this->kp_ = Kp; }  // for compatibility with other PID libraries
     void setKi(float Ki) { this->ki_Ts_ = Ki * Ts_; }  // premultiply by Ts for efficiency
     void setKd(float Kd) { this->kd_Ts_ = Kd / Ts_; }  // predivide by Ts for efficiency
     void setIntegClamp(float integ_clamp) { this->integ_clamp_ = (k_ * ki_Ts_ > 0) ? integ_clamp / (k_ * ki_Ts_) : 0.0f; }
