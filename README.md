@@ -9,7 +9,8 @@ Features:
   * Standard form PID with the derivative on measurement
 * Integral windup clamping
 * Output clamping
-* Low pass filter on the derivative term and output term
+* Low-pass filter on the derivative term and output term
+* Pre-multiplication of the time step with the integral and derivative gains
 
 As used in: \
 [A cascaded TVC rocket project](https://github.com/CAPTR-Project/CAPTR-V1-AVI) \
@@ -22,7 +23,7 @@ As used in: \
 The parallel form is a common PID implementation where the three terms (Proportional, Integral, Derivative) are calculated independently and summed.
 
 <p align="center">
-$$\large u(t) = Kp \cdot e(t) + Ki \cdot \int e(t) \, dt + Kd \cdot \frac{de(t)}{dt}$$
+$$\large u(t) = K_p \cdot e(t) + K_i \cdot \int e(t) \, dt + K_d \cdot \frac{de(t)}{dt}$$
 </p>
 
 Where:
@@ -38,7 +39,7 @@ This implementation is available in `pid.hpp` (with derivative on error) and `pi
 The standard form (sometimes called the ideal form) includes an overall controller gain that acts on all three terms.
 
 <p align="center">
-$$\large u(t) = K * (Kp * e(t) + Ki * ∫e(t)dt - Kd * d(pv)/dt)$$
+$$\large u(t) = K \left( K_p e(t) + K_i \int e(t) \, dt - K_d \frac{d(\text{pv})}{dt} \right)$$
 </p>
 
 Where:
